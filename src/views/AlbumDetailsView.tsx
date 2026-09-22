@@ -261,7 +261,7 @@ export const AlbumDetailsView: React.FC = () => {
   );
 
   return (
-    <div id="album-view-container" className="fixed inset-0 z-50 w-full h-[100dvh] overflow-y-auto overscroll-none text-white bg-black pb-28">
+    <div id="album-view-container" className="fixed inset-0 z-40 w-full h-[100dvh] overflow-y-auto overscroll-none text-white bg-black pb-28">
       {/* Background Hero Banner (blurred) */}
       <div className="absolute top-0 inset-x-0 h-[60vh] min-h-[400px] pointer-events-none overflow-hidden z-0">
         <img

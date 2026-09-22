@@ -3,8 +3,6 @@ import { MusicProvider, useMusic } from './context/MusicContext';
 import { MobileNav } from './components/MobileNav';
 import { CreatePlaylistModal } from './components/CreatePlaylistModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
-import { SplashScreen } from './components/SplashScreen';
-import { AppLogo } from './components/AppLogo';
 import { MiniPlayer } from './components/MiniPlayer';
 import { PlayerScreen } from './components/PlayerScreen';
 import { AppRouter } from './router';
@@ -54,9 +52,6 @@ const MainContent: React.FC = () => {
         isOpen={isAuthModalOpen} 
         onClose={closeAuthModal} 
       />
-
-      {/* App Launch Splash Screen */}
-      <SplashScreen />
     </div>
   );
 };

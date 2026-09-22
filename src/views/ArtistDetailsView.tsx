@@ -252,7 +252,7 @@ export const ArtistDetailsView: React.FC = () => {
   const epsAndSingles = artistAlbums.filter((a) => a.type === 'EP' || a.type === 'SINGLE');
 
   return (
-    <div id="artist-view-container" className="fixed inset-0 z-50 w-full h-[100dvh] overflow-y-auto overscroll-none text-white bg-black pb-28">
+    <div id="artist-view-container" className="fixed inset-0 z-40 w-full h-[100dvh] overflow-y-auto overscroll-none text-white bg-black pb-28">
       {/* Full Width Hero Banner */}
       <div className="absolute top-0 inset-x-0 h-[60vh] min-h-[400px] pointer-events-none overflow-hidden z-0">
         <img
@@ -399,7 +399,7 @@ export const ArtistDetailsView: React.FC = () => {
                 >
                   <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg border border-white/5 group-hover:border-white/20 transition-colors bg-neutral-900">
                     <img
-                      src={album.coverArt || artist.profilePicture}
+                      src={album.coverArt || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'}
                       alt={album.albumTitle}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
@@ -441,7 +441,7 @@ export const ArtistDetailsView: React.FC = () => {
                 >
                   <div className="aspect-square rounded-xl overflow-hidden mb-3 relative shadow-lg border border-white/5 group-hover:border-white/20 transition-colors bg-neutral-900">
                     <img
-                      src={album.coverArt || artist.profilePicture}
+                      src={album.coverArt || 'https://images.unsplash.com/photo-1493225457124-a1a2a537f7c1?auto=format&fit=crop&w=600&q=80'}
                       alt={album.albumTitle}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"

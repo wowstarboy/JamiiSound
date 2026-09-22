@@ -8,7 +8,7 @@ export const MobileNav: React.FC = () => {
   return (
     <nav 
       id="soundwave-mobile-nav"
-      className={`fixed ${currentTab === 'album-details' ? 'hidden' : ''} bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around z-30 px-3 pb-2 select-none`}
+      className="fixed bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around z-50 px-3 pb-2 select-none"
     >
       <button
         id="mobile-nav-home"

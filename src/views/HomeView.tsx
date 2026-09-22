@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, TrendingUp, Search, Flame, Disc3, Radio, ChevronRight } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
-import { AppLogo } from '../components/AppLogo';
-import { HomeSkeleton } from '../components/HomeSkeleton';
 import { fetchFullMusicData, StructuredHomeData } from '../services/firestoreMusicService';
 import { collectionGroup, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -154,7 +152,11 @@ export const HomeView: React.FC = () => {
   }, [data, singlesLimit, setupAutoScrollObserver]);
 
   if (isLoading || !data) {
-    return <HomeSkeleton />;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   const handleScroll = (
@@ -174,39 +176,33 @@ export const HomeView: React.FC = () => {
       {/* Home Page Sticky Header */}
       <header
         id="home-page-header"
-        className="sticky top-0 z-30 w-full bg-gradient-to-b from-white via-white/80 to-transparent dark:from-[#000000] dark:via-[#000000]/80 dark:to-transparent flex items-center justify-between px-4 md:px-8 py-3.5 mb-6 select-none"
+        className="sticky top-0 z-30 w-full bg-gradient-to-b from-white via-white/80 to-transparent dark:from-[#000000] dark:via-[#000000]/80 dark:to-transparent flex items-center justify-between px-4 md:px-8 py-3.5 mb-6 select-none relative"
       >
-        <div id="home-top-left-logo" className="flex items-center">
-          <span 
-            className="text-2xl sm:text-3xl tracking-wide text-white drop-shadow-md select-none font-bold"
-            style={{ fontFamily: "'Lobster Two', cursive" }}
-          >
-            JamiiSound
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => setCurrentTab('search')}
+          className="w-10 h-10 flex items-center justify-center text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
+        >
+          <Search className="w-6 h-6" />
+        </button>
+
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <a
             href="https://play.google.com/store/apps/details?id=com.jamiisound.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-1.5 text-sm font-bold text-black bg-white rounded-full hover:bg-neutral-200 transition-colors mr-2"
+            className="px-4 py-1.5 text-sm font-bold text-black bg-white rounded-full hover:bg-neutral-200 transition-colors"
           >
             Open App
           </a>
-          <button
-            onClick={() => setCurrentTab('search')}
-            className="w-10 h-10 flex items-center justify-center text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
-          >
-            <Search className="w-6 h-6" />
-          </button>
-          <button
-            onClick={() => setCurrentTab('menu')}
-            className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
-          >
-            <div className="w-6 h-0.5 bg-white rounded-full" />
-            <div className="w-4 h-0.5 bg-white rounded-full self-end mr-2" />
-          </button>
         </div>
+
+        <button
+          onClick={() => setCurrentTab('menu')}
+          className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
+        >
+          <div className="w-6 h-0.5 bg-white rounded-full" />
+          <div className="w-4 h-0.5 bg-white rounded-full self-end mr-2" />
+        </button>
       </header>
 
       <div className="px-4 md:px-8 space-y-12">

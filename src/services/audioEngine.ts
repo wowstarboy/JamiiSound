@@ -169,7 +169,7 @@ export class AudioEngine {
       } catch (err) {
         // Polling catch
       }
-    }, 250);
+    }, 500);
   }
 
   private stopYouTubeProgressPolling() {
@@ -600,14 +600,14 @@ export class AudioEngine {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.timerInterval = window.setInterval(() => {
       if (!this.isPlaying || this.mode !== 'synth') return;
-      this.currentTime += 0.25;
+      this.currentTime += 0.5;
       if (this.currentTime >= this.duration) {
         this.currentTime = 0;
         this.callbacks?.onEnded();
       } else {
         this.callbacks?.onTimeUpdate(this.currentTime, this.duration);
       }
-    }, 250);
+    }, 500);
   }
 
   private pauseSynth(): void {

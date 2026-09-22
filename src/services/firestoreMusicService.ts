@@ -197,6 +197,14 @@ export async function fetchArtistFullDataLazy(artistId: string): Promise<{
     fetchArtistSongsLazy(actualArtistId)
   ]);
 
+  // Fix album coverArt if missing using song metadata
+  albums.forEach(alb => {
+    if (!alb.coverArt) {
+      const songWithCover = songs.find(s => s.albumId === alb.albumId && s.coverArt);
+      if (songWithCover) alb.coverArt = songWithCover.coverArt;
+    }
+  });
+
   const artistsMap = new Map<string, FirestoreArtist>();
   if (artist) artistsMap.set(actualArtistId, artist);
 
@@ -396,6 +404,9 @@ export async function fetchAlbumFullDataLazy(
         createdAt: new Date().toISOString(),
       };
     }
+  } else if (!album.coverArt && tracks.length > 0) {
+    // If we have the album object but it lacks coverArt, fill it from tracks
+    album.coverArt = tracks[0].coverUrl;
   }
 
   return { album, tracks };
@@ -494,61 +505,9 @@ export async function fetchFullMusicData(forceRefresh = false): Promise<Structur
     console.warn('collectionGroup albums query:', e);
   }
 
-  // 4. Also fetch subcollections for all artists to ensure every artist has songs & albums
-  const allArtistIds = Array.from(artistsMap.keys());
-  await Promise.allSettled(
-    allArtistIds.map(async (id) => {
-      const artist = artistsMap.get(id);
-      try {
-        const [albSnap, songSnap] = await Promise.all([
-          getDocs(collection(db, 'artists', id, 'albums')),
-          getDocs(collection(db, 'artists', id, 'songs'))
-        ]);
-        albSnap.forEach((d) => {
-          const data = d.data() as Partial<FirestoreAlbum>;
-          const albumId = data.albumId || d.id;
-          if (!albumsMap.has(albumId)) {
-            albumsMap.set(albumId, {
-              albumId,
-              albumTitle: data.albumTitle || 'Untitled Album',
-              artistId: data.artistId || id,
-              artistName: data.artistName || artist?.artistName || '',
-              coverArt: data.coverArt || artist?.profilePicture || '',
-              type: (data.type as 'SINGLE' | 'EP' | 'ALBUM') || 'ALBUM',
-              tracksCount: Number(data.tracksCount) || 1,
-              releaseYear: data.releaseYear || '',
-              genre: data.genre || '',
-              createdAt: data.createdAt || new Date().toISOString(),
-            });
-          }
-        });
-        songSnap.forEach((d) => {
-          const data = d.data() as Partial<FirestoreSong>;
-          const songId = data.songId || d.id;
-          if (!songsMap.has(songId)) {
-            songsMap.set(songId, {
-              songId,
-              audioSourceId: data.audioSourceId || songId,
-              title: data.title || 'Untitled Song',
-              artistId: data.artistId || id,
-              artistName: data.artistName || artist?.artistName || '',
-              albumId: data.albumId || '',
-              albumTitle: data.albumTitle || 'Single',
-              coverArt: data.coverArt || artist?.profilePicture || '',
-              duration: Number(data.duration) || 180,
-              trackNumber: data.trackNumber !== undefined ? Number(data.trackNumber) : undefined,
-              releaseYear: data.releaseYear || '',
-              genre: data.genre || '',
-              streamCount: Number(data.streamCount) || 0,
-              createdAt: data.createdAt || new Date().toISOString(),
-            });
-          }
-        });
-      } catch (e) {
-        // Safe ignore
-      }
-    })
-  );
+  // 4. Removed redundant per-artist subcollection queries to reduce Firestore load and overhead.
+  // The collectionGroup queries above already capture all songs and albums.
+
 
   // Fix album coverArt if missing
   Array.from(songsMap.values()).forEach((song) => {
