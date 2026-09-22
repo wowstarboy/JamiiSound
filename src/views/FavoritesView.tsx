@@ -12,7 +12,7 @@ interface UserProfileData {
 }
 
 export const FavoritesView: React.FC = () => {
-  const { setCurrentTab, goBack, playlists, currentUser, navigateToPlaylist, playTrack, tracks } = useMusic();
+  const { setCurrentTab, playlists, currentUser, navigateToPlaylist, playTrack, tracks } = useMusic();
   const [profileData, setProfileData] = useState<UserProfileData | null>(null);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const [visiblePlaylistsLimit, setVisiblePlaylistsLimit] = useState(5);
@@ -38,7 +38,11 @@ export const FavoritesView: React.FC = () => {
   }, [currentUser]);
 
   const handleBack = () => {
-    goBack();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setCurrentTab('home');
+    }
   };
 
   const displayName = profileData?.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User Profile';

@@ -20,7 +20,6 @@ export const ArtistDetailsView: React.FC = () => {
     getTracksByArtistId,
     getAlbumsByArtistId,
     setCurrentTab,
-    goBack,
     firestoreArtists
   } = useMusic();
 
@@ -212,7 +211,11 @@ export const ArtistDetailsView: React.FC = () => {
   };
 
   const handleBack = () => {
-    goBack();
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setCurrentTab('home');
+    }
   };
 
   const handleShareArtist = async () => {

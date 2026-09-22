@@ -4,7 +4,7 @@ import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyD92P6ubxSkxm5Dv1G0wlDK196alU7lnxs",
-  authDomain: "jamiisound.firebaseapp.com",
+  authDomain: "jamiisound.com",
   projectId: "jamiisound",
   storageBucket: "jamiisound.firebasestorage.app",
   messagingSenderId: "647838428215",
