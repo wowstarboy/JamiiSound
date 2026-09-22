@@ -1,0 +1,6 @@
+{
+  "name": "JamiiSound",
+  "description": "The #1 East Africa music platform. Discover, stream, and celebrate the authentic sounds of East African music and top artists.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
