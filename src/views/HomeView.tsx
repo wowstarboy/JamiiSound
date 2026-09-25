@@ -4,6 +4,7 @@ import { useMusic } from '../context/MusicContext';
 import { fetchFullMusicData, StructuredHomeData } from '../services/firestoreMusicService';
 import { collectionGroup, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { PopularArtistSlider } from '../components/PopularArtistSlider';
 
 export const HomeView: React.FC = () => {
   const { 
@@ -12,7 +13,8 @@ export const HomeView: React.FC = () => {
     navigateToAlbum, 
     setCurrentTab,
     activeAlbumId,
-    activeArtistId
+    activeArtistId,
+    firestoreArtists
   } = useMusic();
 
   const [data, setData] = useState<StructuredHomeData | null>(null);
@@ -151,14 +153,6 @@ export const HomeView: React.FC = () => {
     );
   }, [data, singlesLimit, setupAutoScrollObserver]);
 
-  if (isLoading || !data) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   const handleScroll = (
     e: React.UIEvent<HTMLDivElement>,
     onLoadMore: () => void,
@@ -171,26 +165,47 @@ export const HomeView: React.FC = () => {
     }
   };
 
-  return (
-    <div id="home-view-container" className="h-full overflow-y-auto pb-28 md:pb-24 bg-transparent no-scrollbar">
-      {/* Home Page Sticky Header */}
-      <header
-        id="home-page-header"
-        className="sticky top-0 z-30 w-full bg-gradient-to-b from-white via-white/80 to-transparent dark:from-[#000000] dark:via-[#000000]/80 dark:to-transparent flex items-center justify-between px-4 md:px-8 py-3.5 mb-6 select-none relative"
-      >
-        <button
-          onClick={() => setCurrentTab('search')}
-          className="w-10 h-10 flex items-center justify-center text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
-        >
-          <Search className="w-6 h-6" />
-        </button>
+  // Determine which artists to show in the slider
+  const allAvailableArtists = (data?.topArtists && data.topArtists.length > 0)
+    ? data.topArtists
+    : ((data?.artists && data.artists.length > 0) ? data.artists : firestoreArtists);
 
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+  const showSlider = allAvailableArtists.length > 0;
+
+  return (
+    <div id="home-view-container" className="h-full overflow-y-auto pb-28 md:pb-24 bg-transparent no-scrollbar relative">
+      {(isLoading || !data) ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black z-50">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            <p className="text-xs text-white/40 font-medium tracking-widest uppercase">Loading JamiiSound...</p>
+          </div>
+        </div>
+      ) : (
+        <React.Fragment>
+          {/* Popular Artist Full-Width Hero Slider */}
+          {showSlider && (
+            <PopularArtistSlider artists={allAvailableArtists} />
+          )}
+
+          {/* Home Page Header - Overlaying the slider */}
+          <header
+            id="home-page-header"
+            className="absolute top-0 z-30 w-full bg-gradient-to-b from-black/60 to-transparent flex items-center justify-between px-4 md:px-8 py-4 select-none"
+          >
+            <button
+              onClick={() => setCurrentTab('search')}
+              className="w-10 h-10 flex items-center justify-center text-white bg-black/20 hover:bg-white/10 rounded-full transition-colors shrink-0 backdrop-blur-sm"
+            >
+              <Search className="w-6 h-6" />
+            </button>
+
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <a
             href="https://play.google.com/store/apps/details?id=com.jamiisound.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-1.5 text-sm font-bold text-black bg-white rounded-full hover:bg-neutral-200 transition-colors"
+            className="px-5 py-2 text-sm font-bold text-black bg-white rounded-full hover:bg-neutral-200 transition-colors shadow-lg"
           >
             Open App
           </a>
@@ -198,14 +213,15 @@ export const HomeView: React.FC = () => {
 
         <button
           onClick={() => setCurrentTab('menu')}
-          className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
+          className="w-10 h-10 flex flex-col items-center justify-center gap-1.5 text-white bg-black/20 hover:bg-white/10 rounded-full transition-colors shrink-0 backdrop-blur-sm"
         >
           <div className="w-6 h-0.5 bg-white rounded-full" />
           <div className="w-4 h-0.5 bg-white rounded-full self-end mr-2" />
         </button>
       </header>
 
-      <div className="px-4 md:px-8 space-y-12">
+      {/* Main Content Area */}
+      <div className={`px-4 md:px-8 space-y-12 ${showSlider ? 'mt-10' : 'mt-24'}`}>
         {/* 1. Trending Songs */}
         {data.trendingSongs.length > 0 && (
           <section id="home-trending-section">
@@ -402,6 +418,8 @@ export const HomeView: React.FC = () => {
           </section>
         )}
       </div>
-    </div>
-  );
+    </React.Fragment>
+  )}
+</div>
+);
 };

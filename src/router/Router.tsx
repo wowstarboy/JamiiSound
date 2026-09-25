@@ -6,6 +6,7 @@ import { NavigationTab } from '../types';
 const HomeView = React.lazy(() => import('../views/HomeView').then(m => ({ default: m.HomeView })));
 const SearchView = React.lazy(() => import('../views/SearchView').then(m => ({ default: m.SearchView })));
 const FavoritesView = React.lazy(() => import('../views/FavoritesView').then(m => ({ default: m.FavoritesView })));
+const ListenerProfileView = React.lazy(() => import('../views/ListenerProfileView').then(m => ({ default: m.ListenerProfileView })));
 const PlaylistDetailsView = React.lazy(() => import('../views/PlaylistDetailsView').then(m => ({ default: m.PlaylistDetailsView })));
 const AlbumDetailsView = React.lazy(() => import('../views/AlbumDetailsView').then(m => ({ default: m.AlbumDetailsView })));
 const ArtistDetailsView = React.lazy(() => import('../views/ArtistDetailsView').then(m => ({ default: m.ArtistDetailsView })));
@@ -69,8 +70,6 @@ export const AppRouter: React.FC<RouterProps> = ({ onOpenCreatePlaylist }) => {
       if (playlistId) navigateToPlaylist(playlistId);
     } else if (path === '/search') {
       setCurrentTab('search');
-    } else if (path === '/library') {
-      setCurrentTab('library');
     } else if (path === '/favorites' || path === '/profile') {
       setCurrentTab('favorites');
     } else if (path === '/menu') {
@@ -110,7 +109,6 @@ export const AppRouter: React.FC<RouterProps> = ({ onOpenCreatePlaylist }) => {
       // player is open
     }
     if (currentTab === 'search') url = '/search';
-    else if (currentTab === 'library') url = '/library';
     else if (currentTab === 'favorites') url = '/profile';
     else if (currentTab === 'menu') url = '/menu';
     else if (currentTab === 'album-details' && activeAlbumId) url = `/album/${activeAlbumId}`;
@@ -211,12 +209,10 @@ export const AppRouter: React.FC<RouterProps> = ({ onOpenCreatePlaylist }) => {
         return <HomeView />;
       case 'search':
         return <SearchView />;
-      case 'library':
-        return null;
       case 'favorites':
         return (
           <div className="px-0 md:px-0 py-0 h-full">
-            <FavoritesView />
+            <ListenerProfileView />
           </div>
         );
       case 'playlist-details':

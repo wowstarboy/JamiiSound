@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
 import { StructuredHomeData, getCachedMusicData } from '../services/firestoreMusicService';
-import { collectionGroup, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Artist as FirestoreArtist } from '../types/collections';
 
@@ -10,7 +10,7 @@ export const ChartScreen: React.FC = () => {
   const { setCurrentTab, navigateToArtist } = useMusic();
   const [topArtists, setTopArtists] = useState<FirestoreArtist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [limit, setLimit] = useState(20);
+  const [topArtistsLimit, setTopArtistsLimit] = useState(20);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -37,33 +37,39 @@ export const ChartScreen: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
-    const cachedData = getCachedMusicData();
-    
-    // Real-time listener just like Home page
-    const q = query(collectionGroup(db, 'songs'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    setIsLoading(true);
+
+    // Fetch artists ordered by monthlyListeners for a more efficient Charts page
+    const artistsQuery = query(
+      collection(db, 'artists'),
+      orderBy('monthlyListeners', 'desc'),
+      firestoreLimit(topArtistsLimit)
+    );
+
+    const unsubscribe = onSnapshot(artistsQuery, (snapshot) => {
       if (!isMounted) return;
-      const artistStreams = new Map<string, number>();
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const aid = d.artistId;
-        const plays = Number(d.streamCount) || 0;
-        if (aid) {
-          artistStreams.set(aid, (artistStreams.get(aid) || 0) + plays);
-        }
+      const artists: FirestoreArtist[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data() as Partial<FirestoreArtist>;
+        artists.push({
+          artistId: data.artistId || doc.id,
+          artistName: data.artistName || 'Unknown Artist',
+          profilePicture: data.profilePicture || '',
+          followersCount: Number(data.followersCount) || 0,
+          monthlyListeners: Number(data.monthlyListeners) || 0,
+          bio: data.bio || '',
+          followingCount: Number(data.followingCount) || 0,
+          isVerified: !!data.isVerified,
+          isClaimed: !!data.isClaimed,
+          claimedByUid: data.claimedByUid || null,
+          youtubeUrl: data.youtubeUrl || '',
+          createdAt: data.createdAt || new Date().toISOString(),
+        });
       });
-      
-      const artistsToUse = cachedData?.topArtists || [];
-      const newTopArtists = [...artistsToUse].sort((a, b) => {
-        const aPlays = artistStreams.get(a.artistId) || 0;
-        const bPlays = artistStreams.get(b.artistId) || 0;
-        return bPlays - aPlays;
-      });
-      
-      setTopArtists(newTopArtists);
+      setTopArtists(artists);
       setIsLoading(false);
     }, (error) => {
-      console.warn("Real-time Top Artists error in Charts:", error);
+      console.warn("Error fetching Top Artists in Charts:", error);
       setIsLoading(false);
     });
 
@@ -71,17 +77,17 @@ export const ChartScreen: React.FC = () => {
       isMounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [topArtistsLimit]);
 
   useEffect(() => {
-    const hasMore = limit < topArtists.length;
+    const hasMore = topArtists.length >= topArtistsLimit;
     return setupAutoScrollObserver(
       containerRef.current,
       sentinelRef.current,
-      () => setLimit((prev) => prev + 20),
+      () => setTopArtistsLimit((prev) => prev + 20),
       hasMore
     );
-  }, [topArtists, limit, setupAutoScrollObserver]);
+  }, [topArtists.length, topArtistsLimit, setupAutoScrollObserver]);
 
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-28 md:pb-24 bg-transparent flex flex-col">
@@ -119,7 +125,7 @@ export const ChartScreen: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {topArtists.slice(0, limit).map((artist, idx) => (
+            {topArtists.map((artist, idx) => (
               <div
                 key={artist.artistId}
                 className="flex flex-col items-center text-center cursor-pointer group"
@@ -149,7 +155,7 @@ export const ChartScreen: React.FC = () => {
         )}
         
         {/* Infinite scroll sentinel */}
-        {limit < topArtists.length && !isLoading && (
+        {topArtists.length >= topArtistsLimit && !isLoading && (
           <div ref={sentinelRef} className="w-full py-8 flex justify-center opacity-60">
             <div className="w-6 h-6 border-2 border-neutral-900/20 border-t-neutral-900 dark:border-white/20 dark:border-t-white rounded-full animate-spin"></div>
           </div>

@@ -72,7 +72,6 @@ export interface EqualizerSettings {
 export type NavigationTab = 
   | 'home' 
   | 'search' 
-  | 'library' 
   | 'favorites' 
   | 'playlist-details' 
   | 'album-details' 

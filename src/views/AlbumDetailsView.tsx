@@ -141,39 +141,6 @@ export const AlbumDetailsView: React.FC = () => {
     };
   }, [activeAlbumId, getAlbumById, getTracksByAlbumId]);
 
-  // Real-time listener for stream counts
-  useEffect(() => {
-    if (!album?.artistId || !activeAlbumId) return;
-    let isMounted = true;
-    const q = query(collection(db, `artists/${album.artistId}/songs`));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!isMounted) return;
-      const newTracksMap = new Map();
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.albumId === activeAlbumId) {
-          newTracksMap.set(data.songId || doc.id, Number(data.streamCount) || 0);
-        }
-      });
-
-      setAlbumTracks(prevTracks => 
-        prevTracks.map(t => {
-          if (newTracksMap.has(t.id) && newTracksMap.get(t.id) !== t.plays) {
-            return { ...t, plays: newTracksMap.get(t.id) };
-          }
-          return t;
-        })
-      );
-    }, (err) => {
-      console.warn('Album stream count listener error:', err);
-    });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [album?.artistId, activeAlbumId]);
-
   // Close menus on outside click
   useEffect(() => {
     const handleOutside = () => {
