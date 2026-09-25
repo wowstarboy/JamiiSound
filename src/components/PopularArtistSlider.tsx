@@ -16,7 +16,20 @@ interface PopularArtistSliderProps {
 
 export const PopularArtistSlider: React.FC<PopularArtistSliderProps> = ({ artists }) => {
   const { navigateToArtist } = useMusic();
-  const [selectedArtists, setSelectedArtists] = useState<FirestoreArtist[]>([]);
+  // Helper to get initial selection from artists prop
+  const getInitialSelection = (inputArtists: FirestoreArtist[]) => {
+    if (!inputArtists || inputArtists.length === 0) return [];
+    const uniqueMap = new Map<string, FirestoreArtist>();
+    inputArtists.forEach((art) => {
+      if (art && art.artistId && !uniqueMap.has(art.artistId)) {
+        uniqueMap.set(art.artistId, art);
+      }
+    });
+    const uniqueList = Array.from(uniqueMap.values());
+    return [...uniqueList].sort(() => Math.random() - 0.5).slice(0, 10);
+  };
+
+  const [selectedArtists, setSelectedArtists] = useState<FirestoreArtist[]>(() => getInitialSelection(artists));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [followedMap, setFollowedMap] = useState<Record<string, boolean>>({});
   const [isInteracting, setIsInteracting] = useState(false);
@@ -27,32 +40,30 @@ export const PopularArtistSlider: React.FC<PopularArtistSliderProps> = ({ artist
   const isDraggingRef = useRef<boolean>(false);
   const dragDistanceRef = useRef<number>(0);
 
-  // Initialize and randomize exactly 10 unique artists on initial mount
+  // Initialize follow status and handle artists updates
   useEffect(() => {
     if (!artists || artists.length === 0) return;
 
-    // Deduplicate by artistId
-    const uniqueMap = new Map<string, FirestoreArtist>();
-    artists.forEach((art) => {
-      if (art && art.artistId && !uniqueMap.has(art.artistId)) {
-        uniqueMap.set(art.artistId, art);
-      }
-    });
-
-    const uniqueList = Array.from(uniqueMap.values());
-    // Shuffle randomly on app open / page load
-    const shuffled = [...uniqueList].sort(() => Math.random() - 0.5);
-    const top10 = shuffled.slice(0, 10);
-    setSelectedArtists(top10);
-
-    // Initialize follow status from local store
-    const localFollows = getLocalFollows();
-    const initialFollowMap: Record<string, boolean> = {};
-    top10.forEach((art) => {
-      initialFollowMap[art.artistId] = localFollows.has(art.artistId);
-    });
-    setFollowedMap(initialFollowMap);
-    setCurrentIndex(0);
+    // If we don't have selected artists yet (lazy init failed or prop was empty), set them
+    if (selectedArtists.length === 0) {
+      const top10 = getInitialSelection(artists);
+      setSelectedArtists(top10);
+      
+      const localFollows = getLocalFollows();
+      const initialFollowMap: Record<string, boolean> = {};
+      top10.forEach((art) => {
+        initialFollowMap[art.artistId] = localFollows.has(art.artistId);
+      });
+      setFollowedMap(initialFollowMap);
+    } else {
+      // Just update follow map for existing selection
+      const localFollows = getLocalFollows();
+      const nextFollowMap: Record<string, boolean> = { ...followedMap };
+      selectedArtists.forEach((art) => {
+        nextFollowMap[art.artistId] = localFollows.has(art.artistId);
+      });
+      setFollowedMap(nextFollowMap);
+    }
   }, [artists]);
 
   const total = selectedArtists.length;

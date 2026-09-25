@@ -89,28 +89,28 @@ export const ChartScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* Custom Tabs: No underline, White active, Grey inactive */}
-        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-1">
+        {/* Custom Tabs: Full-width, No underline, White active, Grey inactive, Larger active text */}
+        <div className="flex w-full items-center">
           <button
             onClick={() => setActiveTab('artists')}
-            className={`text-sm font-bold transition-colors whitespace-nowrap ${
-              activeTab === 'artists' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            className={`flex-1 py-2 text-center font-bold transition-all whitespace-nowrap ${
+              activeTab === 'artists' ? 'text-white text-lg' : 'text-neutral-500 text-sm hover:text-neutral-300'
             }`}
           >
             Top Artists
           </button>
           <button
             onClick={() => setActiveTab('songs')}
-            className={`text-sm font-bold transition-colors whitespace-nowrap ${
-              activeTab === 'songs' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            className={`flex-1 py-2 text-center font-bold transition-all whitespace-nowrap ${
+              activeTab === 'songs' ? 'text-white text-lg' : 'text-neutral-500 text-sm hover:text-neutral-300'
             }`}
           >
             Top Songs
           </button>
           <button
             onClick={() => setActiveTab('albums')}
-            className={`text-sm font-bold transition-colors whitespace-nowrap ${
-              activeTab === 'albums' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            className={`flex-1 py-2 text-center font-bold transition-all whitespace-nowrap ${
+              activeTab === 'albums' ? 'text-white text-lg' : 'text-neutral-500 text-sm hover:text-neutral-300'
             }`}
           >
             Top Albums
