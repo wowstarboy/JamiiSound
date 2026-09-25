@@ -1,163 +1,219 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft, Search } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { ArrowLeft, Search, Play, Disc, User as UserIcon } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
-import { StructuredHomeData, getCachedMusicData } from '../services/firestoreMusicService';
+import { StructuredHomeData, getCachedMusicData, fetchFullMusicData } from '../services/firestoreMusicService';
 import { collection, query, onSnapshot, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Artist as FirestoreArtist } from '../types/collections';
+import { Artist as FirestoreArtist, Album as FirestoreAlbum } from '../types/collections';
+import { Track } from '../types';
+import { formatNumber } from '../utils/formatters';
+
+type ChartTab = 'artists' | 'songs' | 'albums';
 
 export const ChartScreen: React.FC = () => {
-  const { setCurrentTab, navigateToArtist } = useMusic();
-  const [topArtists, setTopArtists] = useState<FirestoreArtist[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [topArtistsLimit, setTopArtistsLimit] = useState(20);
-  
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { setCurrentTab, navigateToArtist, navigateToAlbum, playTrack } = useMusic();
+  const [activeTab, setActiveTab] = useState<ChartTab>('artists');
+  const [data, setData] = useState<StructuredHomeData | null>(getCachedMusicData());
+  const [isLoading, setIsLoading] = useState(!getCachedMusicData());
 
-  // Setup infinite scroll observer
-  const setupAutoScrollObserver = useCallback((
-    container: HTMLDivElement | null,
-    sentinel: HTMLDivElement | null,
-    onLoadMore: () => void,
-    hasMore: boolean
-  ) => {
-    if (!container || !sentinel || !hasMore) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          onLoadMore();
-        }
-      },
-      { root: null, rootMargin: '200px', threshold: 0.1 } // use viewport as root for vertical scroll
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
+    if (!data) setIsLoading(true);
 
-    // Fetch artists ordered by monthlyListeners for a more efficient Charts page
-    const artistsQuery = query(
-      collection(db, 'artists'),
-      orderBy('monthlyListeners', 'desc'),
-      firestoreLimit(topArtistsLimit)
-    );
-
-    const unsubscribe = onSnapshot(artistsQuery, (snapshot) => {
-      if (!isMounted) return;
-      const artists: FirestoreArtist[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data() as Partial<FirestoreArtist>;
-        artists.push({
-          artistId: data.artistId || doc.id,
-          artistName: data.artistName || 'Unknown Artist',
-          profilePicture: data.profilePicture || '',
-          followersCount: Number(data.followersCount) || 0,
-          monthlyListeners: Number(data.monthlyListeners) || 0,
-          bio: data.bio || '',
-          followingCount: Number(data.followingCount) || 0,
-          isVerified: !!data.isVerified,
-          isClaimed: !!data.isClaimed,
-          claimedByUid: data.claimedByUid || null,
-          youtubeUrl: data.youtubeUrl || '',
-          createdAt: data.createdAt || new Date().toISOString(),
-        });
-      });
-      setTopArtists(artists);
-      setIsLoading(false);
-    }, (error) => {
-      console.warn("Error fetching Top Artists in Charts:", error);
-      setIsLoading(false);
+    fetchFullMusicData().then((result) => {
+      if (isMounted) {
+        setData(result);
+        setIsLoading(false);
+      }
+    }).catch(err => {
+      console.error("Error fetching charts data:", err);
+      if (isMounted) setIsLoading(false);
     });
 
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [topArtistsLimit]);
+    return () => { isMounted = false; };
+  }, []);
 
-  useEffect(() => {
-    const hasMore = topArtists.length >= topArtistsLimit;
-    return setupAutoScrollObserver(
-      containerRef.current,
-      sentinelRef.current,
-      () => setTopArtistsLimit((prev) => prev + 20),
-      hasMore
-    );
-  }, [topArtists.length, topArtistsLimit, setupAutoScrollObserver]);
+  const sortedSongs = useMemo(() => {
+    if (!data?.tracks) return [];
+    return [...data.tracks].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 50);
+  }, [data?.tracks]);
+
+  const sortedAlbums = useMemo(() => {
+    if (!data?.albumsOnly || !data?.tracks) return [];
+    
+    // Calculate total listeners for each album
+    const albumListeners = new Map<string, number>();
+    data.tracks.forEach(track => {
+      if (track.albumId) {
+        albumListeners.set(track.albumId, (albumListeners.get(track.albumId) || 0) + (track.plays || 0));
+      }
+    });
+
+    return [...data.albumsOnly]
+      .map(album => ({
+        ...album,
+        totalListeners: albumListeners.get(album.albumId) || 0
+      }))
+      .sort((a, b) => b.totalListeners - a.totalListeners)
+      .slice(0, 50);
+  }, [data?.albumsOnly, data?.tracks]);
+
+  const sortedArtists = useMemo(() => {
+    if (!data?.topArtists) return [];
+    return data.topArtists.slice(0, 50);
+  }, [data?.topArtists]);
 
   return (
     <div className="h-full overflow-y-auto no-scrollbar pb-28 md:pb-24 bg-transparent flex flex-col">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 w-full bg-gradient-to-b from-white via-white/80 to-transparent dark:from-[#000000] dark:via-[#000000]/80 dark:to-transparent flex items-center justify-between px-4 md:px-8 py-3.5 mb-6 select-none">
-        <button
-          onClick={() => setCurrentTab('home')}
-          aria-label="Back"
-          className="w-10 h-10 flex items-center justify-center text-neutral-900 dark:text-white bg-transparent hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="font-bold text-neutral-900 dark:text-white text-lg drop-shadow-md truncate px-4">
-          Charts
-        </h1>
-        <button
-          onClick={() => setCurrentTab('search')}
-          aria-label="Search"
-          className="w-10 h-10 flex items-center justify-center text-neutral-900 dark:text-white bg-transparent hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
-        >
-          <Search className="w-6 h-6" />
-        </button>
+      <header className="sticky top-0 z-30 w-full bg-[#000000] flex flex-col px-4 md:px-8 py-3.5 select-none">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setCurrentTab('home')}
+            aria-label="Back"
+            className="w-10 h-10 flex items-center justify-center text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="font-bold text-white text-lg drop-shadow-md truncate px-4">
+            Charts
+          </h1>
+          <button
+            onClick={() => setCurrentTab('search')}
+            aria-label="Search"
+            className="w-10 h-10 flex items-center justify-center text-white bg-transparent hover:bg-white/10 rounded-full transition-colors shrink-0"
+          >
+            <Search className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Custom Tabs: No underline, White active, Grey inactive */}
+        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-1">
+          <button
+            onClick={() => setActiveTab('artists')}
+            className={`text-sm font-bold transition-colors whitespace-nowrap ${
+              activeTab === 'artists' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            Top Artists
+          </button>
+          <button
+            onClick={() => setActiveTab('songs')}
+            className={`text-sm font-bold transition-colors whitespace-nowrap ${
+              activeTab === 'songs' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            Top Songs
+          </button>
+          <button
+            onClick={() => setActiveTab('albums')}
+            className={`text-sm font-bold transition-colors whitespace-nowrap ${
+              activeTab === 'albums' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            Top Albums
+          </button>
+        </div>
       </header>
 
-      {/* Grid Content */}
-      <div className="px-4 md:px-8" ref={containerRef}>
+      {/* Content */}
+      <div className="px-4 md:px-8 pt-6" ref={containerRef}>
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-neutral-200 dark:bg-neutral-800 animate-pulse mb-3"></div>
-                <div className="w-24 h-4 bg-neutral-200 dark:bg-neutral-800 animate-pulse rounded"></div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {topArtists.map((artist, idx) => (
-              <div
-                key={artist.artistId}
-                className="flex flex-col items-center text-center cursor-pointer group"
-                onClick={() => navigateToArtist(artist.artistId)}
-              >
-                <div className="relative mb-3">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-xl border-2 border-neutral-200 dark:border-neutral-800 group-hover:border-black dark:group-hover:border-white transition-colors bg-neutral-100 dark:bg-neutral-900">
-                    <img
-                      loading="lazy"
-                      decoding="async"
-                      src={artist.profilePicture || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80'}
-                      alt={artist.artistName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      referrerPolicy="no-referrer"
-                    />
+          <div className="space-y-4">
+            {activeTab === 'artists' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {sortedArtists.map((artist, idx) => (
+                  <div
+                    key={artist.artistId}
+                    className="flex flex-col items-center text-center cursor-pointer group"
+                    onClick={() => navigateToArtist(artist.artistId)}
+                  >
+                    <div className="relative mb-3">
+                      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-xl border-2 border-neutral-800 group-hover:border-white transition-colors bg-neutral-900">
+                        <img
+                          loading="lazy"
+                          decoding="async"
+                          src={artist.profilePicture || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80'}
+                          alt={artist.artistName}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white text-black font-bold text-sm flex items-center justify-center shadow-md border-[2.5px] border-black z-10">
+                        {idx + 1}
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm sm:text-base text-slate-100 truncate group-hover:text-white w-full">
+                      {artist.artistName}
+                    </h3>
                   </div>
-                  <div className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white text-black font-bold text-sm flex items-center justify-center shadow-md border-[2.5px] border-black z-10">
-                    {idx + 1}
-                  </div>
-                </div>
-                <h3 className="font-semibold text-sm sm:text-base text-neutral-900 dark:text-slate-100 truncate group-hover:text-black dark:group-hover:text-white w-full">
-                  {artist.artistName}
-                </h3>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Infinite scroll sentinel */}
-        {topArtists.length >= topArtistsLimit && !isLoading && (
-          <div ref={sentinelRef} className="w-full py-8 flex justify-center opacity-60">
-            <div className="w-6 h-6 border-2 border-neutral-900/20 border-t-neutral-900 dark:border-white/20 dark:border-t-white rounded-full animate-spin"></div>
+            )}
+
+            {activeTab === 'songs' && (
+              <div className="flex flex-col gap-1">
+                {sortedSongs.map((track, idx) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center gap-4 p-2 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer"
+                    onClick={() => playTrack(track, sortedSongs)}
+                  >
+                    <div className="w-8 text-center text-xs font-bold text-neutral-500 group-hover:text-white">
+                      {idx + 1}
+                    </div>
+                    <div className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden shadow-md">
+                      <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Play className="w-5 h-5 text-white fill-current" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
+                      <p className="text-xs text-neutral-400 truncate">{track.artist}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'albums' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {sortedAlbums.map((album, idx) => (
+                  <div
+                    key={album.albumId}
+                    className="flex flex-col cursor-pointer group"
+                    onClick={() => navigateToAlbum(album.albumId)}
+                  >
+                    <div className="relative mb-3 aspect-square rounded-xl overflow-hidden shadow-xl border border-white/5 group-hover:border-white/20 transition-colors bg-neutral-900">
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={album.coverArt || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80'}
+                        alt={album.albumTitle}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center shadow-md border-[2px] border-black z-10">
+                        {idx + 1}
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-sm text-white truncate group-hover:text-emerald-400 transition-colors">
+                      {album.albumTitle}
+                    </h3>
+                    <p className="text-xs text-neutral-400 truncate mt-0.5">
+                      {album.artistName}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

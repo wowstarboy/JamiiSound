@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Play, TrendingUp, Search, Flame, Disc3, Radio, ChevronRight } from 'lucide-react';
 import { useMusic } from '../context/MusicContext';
-import { fetchFullMusicData, StructuredHomeData } from '../services/firestoreMusicService';
+import { fetchFullMusicData, StructuredHomeData, getCachedMusicData } from '../services/firestoreMusicService';
 import { collectionGroup, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { PopularArtistSlider } from '../components/PopularArtistSlider';
@@ -17,8 +17,8 @@ export const HomeView: React.FC = () => {
     firestoreArtists
   } = useMusic();
 
-  const [data, setData] = useState<StructuredHomeData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<StructuredHomeData | null>(getCachedMusicData());
+  const [isLoading, setIsLoading] = useState(!getCachedMusicData());
 
   const [trendingLimit, setTrendingLimit] = useState(10);
   const [topArtistsLimit, setTopArtistsLimit] = useState(10);

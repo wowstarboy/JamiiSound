@@ -299,17 +299,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (currentTab === 'home' && !hasTriggeredHomeLogin.current) {
-      hasTriggeredHomeLogin.current = true;
-      const timer = setTimeout(() => {
-        if (!auth.currentUser) {
-          setIsAuthModalOpen(true);
-        }
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentTab]);
+
 
   const openAuthModal = useCallback(() => {
     setIsAuthModalOpen(true);

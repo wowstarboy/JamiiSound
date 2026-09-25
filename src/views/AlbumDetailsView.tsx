@@ -284,10 +284,7 @@ export const AlbumDetailsView: React.FC = () => {
               <span className="text-xs text-white/70">
                 {albumTracks.length} {albumTracks.length === 1 ? 'Song' : 'Songs'}
               </span>
-              <span className="text-white/40">•</span>
-              <span className="text-xs text-white/70">
-                {formatNumber(totalAlbumListeners)} Total Listeners
-              </span>
+              {/* Hidden count */}
               {releaseYear && (
                 <>
                   <span className="text-white/40">•</span>
@@ -373,7 +370,7 @@ export const AlbumDetailsView: React.FC = () => {
         <div className="hidden sm:flex items-center px-4 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider border-b border-white/5 select-none">
           <div className="w-8 text-center mr-3">#</div>
           <div className="flex-1">Title</div>
-          <div className="w-24 text-center">Plays</div>
+          <div className="w-24 text-center"></div>
           <div className="w-16 text-right flex items-center justify-end pr-2">
             <Clock className="w-3.5 h-3.5" />
           </div>
@@ -451,17 +448,12 @@ export const AlbumDetailsView: React.FC = () => {
                       >
                         {track.artist}
                       </span>
-                      <span className="mx-1.5 opacity-50">•</span>
-                      <span>
-                        {new Intl.NumberFormat().format(track.plays || 0)} listeners
-                      </span>
+                      {/* Hidden count */}
                     </div>
                   </div>
 
                   {/* Play count */}
-                  <div className="hidden sm:block w-24 text-center text-xs text-white/50 font-mono">
-                    {formatNumber(track.plays || 0)}
-                  </div>
+                  <div className="hidden sm:block w-24 text-center text-xs text-white/50 font-mono"></div>
 
                   {/* Duration */}
                   <div className="w-16 text-right text-xs text-white/50 font-mono pr-2">

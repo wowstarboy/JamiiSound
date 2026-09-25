@@ -117,17 +117,12 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           >
             {track.artist}
           </span>
-          <span className="opacity-40">•</span>
-          <span className="text-slate-400 font-mono text-[11px]">
-            {formatNumber(track.plays || 0)} listeners
-          </span>
+          {/* Hidden count */}
         </div>
       </div>
 
       {/* Play/Listeners count (desktop) */}
-      <div className="hidden sm:block w-20 text-right pr-3 text-xs text-slate-400 font-mono">
-        {formatNumber(track.plays || 0)}
-      </div>
+      <div className="hidden sm:block w-20 text-right pr-3 text-xs text-slate-400 font-mono"></div>
 
       {/* Album name (desktop) */}
       {showAlbum && (

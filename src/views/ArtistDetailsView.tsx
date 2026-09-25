@@ -306,11 +306,7 @@ export const ArtistDetailsView: React.FC = () => {
             )}
             
             {/* Monthly Listeners matching bio font */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-sm text-slate-300">
-              <span>{formatNumber(currentMonthlyListeners)} monthly listeners</span>
-              <span>•</span>
-              <span>{formatNumber(currentFollowersCount)} followers</span>
-            </div>
+            {/* Hidden counts */}
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-4">
