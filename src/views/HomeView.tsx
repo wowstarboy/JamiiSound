@@ -178,7 +178,6 @@ export const HomeView: React.FC = () => {
         <div className="absolute inset-0 flex items-center justify-center bg-black z-50">
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            <p className="text-xs text-white/40 font-medium tracking-widest uppercase">Loading JamiiSound...</p>
           </div>
         </div>
       ) : (
